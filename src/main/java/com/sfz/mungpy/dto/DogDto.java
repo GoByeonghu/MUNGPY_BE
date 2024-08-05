@@ -10,4 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DogDto {
+    private String name;
+    private String image;
+    private String summary;
+    private String description;
 }

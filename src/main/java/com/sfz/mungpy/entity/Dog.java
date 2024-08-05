@@ -1,8 +1,7 @@
 package com.sfz.mungpy.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.sfz.mungpy.dto.DogDto;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
@@ -14,5 +13,19 @@ import lombok.*;
 @AllArgsConstructor
 public class Dog {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String name;
+    private String image;
+    private String summary;
+    private String description;
+
+    public DogDto toDto() {
+        return DogDto.builder()
+                .name(name)
+                .image(image)
+                .summary(summary)
+                .description(description)
+                .build();
+    }
 }
