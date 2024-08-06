@@ -37,6 +37,11 @@ public class Dog {
     @Column(name = "expiration_date")
     private LocalDateTime expirationDate;
 
+    public void updateAnalysis(String description, String matchReason) {
+        this.description = description;
+        this.matchReason = matchReason;
+    }
+
     public DogMatch toMatchDto() {
         return DogMatch.builder()
                 .id(id)
@@ -54,6 +59,8 @@ public class Dog {
                 .kind(kind)
                 .name(name)
                 .image(image)
+                .description(description)
+                .matchReason(matchReason)
                 .personality(Arrays.stream(personality.split(", ")).toList())
                 .rescuePlace(rescuePlace)
                 .protectPlace(protectPlace)

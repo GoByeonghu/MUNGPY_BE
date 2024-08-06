@@ -11,6 +11,7 @@ import com.sfz.mungpy.repository.DogRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.Media;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -30,10 +31,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.PriorityQueue;
+import java.util.*;
 
 
 @Slf4j
@@ -60,7 +58,7 @@ public class DogService {
         private int point;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public DogMatch matchDog(List<String> personality, MultipartFile image) {
         List<Dog> dogList = dogRepository.findAll();
 
@@ -105,8 +103,16 @@ public class DogService {
         DogMatch matchDto = matchDog.toMatchDto();
         matchDto.setImage("/images/" + imageName);
 
+        Map<String, String> resultMap;
         try {
-            log.info(requestOpenAIAnalysis(image, matchDto.getImage()));
+            resultMap = requestOpenAIAnalysis(matchDog.getPersonality(), personality.toString(), matchDto.getImage());
+
+            String description = resultMap.get("description");
+            String matchReason = resultMap.get("matchReason");
+
+            matchDto.setDescription(description);
+            matchDto.setMatchReason(matchReason);
+            matchDog.updateAnalysis(description, matchReason);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -142,22 +148,32 @@ public class DogService {
         return responseBody.getData();
     }
 
-    private String requestOpenAIAnalysis(MultipartFile userProfile, String dogImageName) throws IOException {
+    private Map<String, String> requestOpenAIAnalysis(String dogPersonality, String userPersonality, String dogImageName) throws IOException {
 
         Media dogImage = new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/static" + dogImageName));
-        Media userImage = new Media(MimeTypeUtils.IMAGE_PNG, new MultipartFileResource(userProfile));
+
+        String order = "너는 유기견 매칭 서비스의 분석 담당관이야." +
+                "너의 일은 강아지 이미지를 분석해서 요약하고, 사용자와 강아지의 성향을 비교해서 둘이 어울리는 이유를 생성해주는 거야";
+        SystemMessage systemMessage = new SystemMessage(order);
 
         UserMessage userMessage = new UserMessage(
-                "나는 지금 사용자와 닮은 유기견을 매칭해서 입양을 독려하는 서비스를 개발하고 있어.\n" +
-                        "여기서 네가 맡을 역할은 우리가 찾아낸 닮은 꼴 강아지의 사진과 사용자의 사진을 비교해서 살펴보고" +
-                        "어떤 점이 닮았는지 분석해줄래? 우선 강아지의 사진이 어떤 느낌인지 짧은 한 마디로 말해주고," +
-                        "그 다음 사용자와 어떤 부분이 닮았는지 알려줘. 자꾸 사람과 강아지 비교 못하겠다고 하지 말고. 전원선 뽑아버린다.",
-                List.of(userImage, dogImage));
+                "너가 할 일은 두 가지야. 첫 번째, 강아지 사진을 분석해서 분위기나 외형을 고려해서 한 마디로 표현해줘." +
+                        "그리고 이 강아지의 성향은 " + dogPersonality + "인데, 이걸 한 마디에 반영해줘. 예를 들면 순둥순둥한 방콕러 같이." +
+                        "두 번째, 주인의 성향은 " + userPersonality + "인데, 위의 강아지의 성향과 주인의 성향을 분석해서" +
+                        "이 둘이 왜 어울리는지 감성적으로 3줄 요약해줘. 같은 말을 반복하면 안되고 나에게 응답할 때는 {첫 번째 응답 결과}/{두 번째 응답 결과} 형식으로 해줘." +
+                        "그리고 사용자를 부를 때는 당신 이라고 해줘. 예를 들면 당신에게 이 아이를 추천한 이유는 처럼",
+                List.of(dogImage));
 
-        ChatResponse response = openAiChatModel.call(new Prompt(List.of(userMessage),
+        ChatResponse response = openAiChatModel.call(new Prompt(List.of(systemMessage, userMessage),
                 OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
 
-        return response.getResult().getOutput().getContent();
+        String[] result = response.getResult().getOutput().getContent().split("/");
+
+        Map<String, String> resultMap = new HashMap<>();
+        resultMap.put("description", result[0].trim());
+        resultMap.put("matchReason", result[1].trim());
+
+        return resultMap;
     }
 
     private static class MultipartFileResource extends ByteArrayResource {
@@ -187,6 +203,8 @@ public class DogService {
         DogSpecific dogSpecific = dogRepository.findById(dogId)
                 .orElseThrow(DogNotFoundException::new)
                 .toDogSpecificDto();
+
+        log.info(dogSpecific.toString());
 
         dogSpecific.setImage("/images/" + dogSpecific.getImage());
 

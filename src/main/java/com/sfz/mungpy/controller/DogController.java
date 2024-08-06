@@ -8,14 +8,11 @@ import com.sfz.mungpy.exception.ShelterNotFoundException;
 import com.sfz.mungpy.service.DogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -23,7 +20,6 @@ import java.util.Map;
 @RequestMapping("/dog")
 public class DogController {
     private final DogService dogService;
-    private final ResourceLoader resourceLoader;
 
     @PostMapping
     public ResponseEntity<?> getDog(@ModelAttribute UserInfomation userInfomation) {

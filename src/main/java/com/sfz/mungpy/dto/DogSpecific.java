@@ -19,6 +19,8 @@ public class DogSpecific {
     private String kind;
     private String name;
     private String image;
+    private String description;
+    private String matchReason;
     private List<String> personality;
     private String rescuePlace;
     private String protectPlace;
