@@ -57,6 +57,7 @@ public class Dog {
                 .rescuePlace(rescuePlace)
                 .protectPlace(protectPlace)
                 .protectTelno(protectTelno)
+                .expirationDate(expirationDate)
                 .build();
     }
 }
