@@ -9,9 +9,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DogDto {
+public class DogMatchDto {
+    private Long id;
     private String name;
     private String image;
-    private String summary;
     private String description;
+    private String matchReason;
 }
