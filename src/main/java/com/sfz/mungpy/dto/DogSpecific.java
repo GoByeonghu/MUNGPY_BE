@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DogSpecificDto {
+public class DogSpecific {
     private int age;
     private String sex;
     private String kind;

@@ -1,28 +1,39 @@
 package com.sfz.mungpy.service;
 
+import com.sfz.mungpy.dto.ShelterInformation;
+import com.sfz.mungpy.dto.ShelterRegister;
 import com.sfz.mungpy.entity.Shelter;
+import com.sfz.mungpy.exception.ShelterNotFoundException;
 import com.sfz.mungpy.repository.ShelterRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ShelterService {
+    private final ShelterRepository shelterRepository;
 
-    @Autowired
-    private ShelterRepository shelterRepository;
+    @Transactional(readOnly = true)
+    public List<ShelterInformation> getAllShelters() {
+        List<Shelter> shelters = shelterRepository.findAll();
 
-    public List<Shelter> getAllShelters() {
-        return shelterRepository.findAll();
+        if (shelters.isEmpty()) throw new ShelterNotFoundException();
+
+        return shelters.stream()
+                .map(Shelter::toDto)
+                .toList();
     }
 
-    public Optional<Shelter> getShelterById(Long id) {
-        return shelterRepository.findById(id);
+    @Transactional(readOnly = true)
+    public ShelterInformation getShelterById(Long shelterId) {
+        return shelterRepository.findById(shelterId).orElseThrow(ShelterNotFoundException::new).toDto();
     }
 
-    public Shelter addShelter(Shelter shelter) {
-        return shelterRepository.save(shelter);
+    @Transactional
+    public void addShelter(ShelterRegister register) {
+        shelterRepository.save(register.toEntity());
     }
 }

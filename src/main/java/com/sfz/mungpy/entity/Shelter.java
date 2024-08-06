@@ -1,12 +1,12 @@
 package com.sfz.mungpy.entity;
 
+import com.sfz.mungpy.dto.ShelterInformation;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
 @Table(name = "shelters")
 @Getter
-@Setter
 @ToString
 @Builder
 @NoArgsConstructor
@@ -15,13 +15,18 @@ public class Shelter {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String name; // 업체 이름
+    private String address;
+    private String telno;
+    private String delegate; // 대표자 이름
+    @Enumerated(EnumType.STRING)
+    private ShelterType type;
 
-    @Column(name = "protect_place")
-    private String protectPlace;
-
-    @Column(name = "protect_telno")
-    private String protectTelno;
-
-//    @Column(name = "protect_email")
-//    private String protectEmail;
+    public ShelterInformation toDto() {
+        return ShelterInformation.builder()
+                .name(name)
+                .address(address)
+                .telno(telno)
+                .build();
+    }
 }

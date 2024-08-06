@@ -1,18 +1,21 @@
 package com.sfz.mungpy.controller;
 
-import com.sfz.mungpy.dto.DogMatchDto;
-import com.sfz.mungpy.dto.DogSpecificDto;
+import com.sfz.mungpy.dto.DogMatch;
+import com.sfz.mungpy.dto.DogSpecific;
 import com.sfz.mungpy.dto.UserInfomation;
 import com.sfz.mungpy.exception.DogNotFoundException;
 import com.sfz.mungpy.exception.ShelterNotFoundException;
 import com.sfz.mungpy.service.DogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -20,6 +23,7 @@ import java.util.List;
 @RequestMapping("/dog")
 public class DogController {
     private final DogService dogService;
+    private final ResourceLoader resourceLoader;
 
     @PostMapping
     public ResponseEntity<?> getDog(@ModelAttribute UserInfomation userInfomation) {
@@ -30,6 +34,12 @@ public class DogController {
             jsonMessage += "\"사용자 성향 데이터가 존재하지 않습니다.\"";
             return ResponseEntity.badRequest().body(jsonMessage);
         }
+
+        List<String> personalityList = userInfomation.getPersonality();
+        for (int i = 0; i < personalityList.size(); i++) {
+            log.info("{}: {}", i, personalityList.get(i));
+        }
+        log.info("imageName: {}", userInfomation.getImage().getOriginalFilename());
 
         if (personality.size() != 6) {
             jsonMessage += "\"사용자 성향 데이터의 갯수는 6개여야 합니다.\"";
@@ -42,14 +52,16 @@ public class DogController {
             return ResponseEntity.badRequest().body(jsonMessage);
         }
 
-        DogMatchDto dogMatchDto;
+        DogMatch dogMatch;
         try {
-            dogMatchDto = dogService.matchDog(personality, image);
+            dogMatch = dogService.matchDog(personality, image);
         } catch (DogNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.ok(dogMatchDto);
+        log.info(dogMatch.toString());
+
+        return ResponseEntity.ok(dogMatch);
     }
 
     @GetMapping("/{dogId}")
@@ -59,13 +71,13 @@ public class DogController {
             return ResponseEntity.badRequest().body(jsonMessage);
         }
 
-        DogSpecificDto dogSpecificDto;
+        DogSpecific dogSpecific;
         try {
-            dogSpecificDto = dogService.showDog(dogId);
+            dogSpecific = dogService.showDog(dogId);
         } catch (DogNotFoundException | ShelterNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.ok().body(dogSpecificDto);
+        return ResponseEntity.ok().body(dogSpecific);
     }
 }

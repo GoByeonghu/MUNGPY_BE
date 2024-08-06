@@ -1,7 +1,7 @@
 package com.sfz.mungpy.entity;
 
-import com.sfz.mungpy.dto.DogMatchDto;
-import com.sfz.mungpy.dto.DogSpecificDto;
+import com.sfz.mungpy.dto.DogMatch;
+import com.sfz.mungpy.dto.DogSpecific;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,14 +31,14 @@ public class Dog {
     @Column(name = "rescue_place")
     private String rescuePlace;
     @Column(name = "protect_place")
-    private String protectPlace; //
+    private String protectPlace;
     @Column(name = "protect_telno")
-    private String protectTelno; //
+    private String protectTelno;
     @Column(name = "expiration_date")
     private LocalDateTime expirationDate;
 
-    public DogMatchDto toMatchDto() {
-        return DogMatchDto.builder()
+    public DogMatch toMatchDto() {
+        return DogMatch.builder()
                 .id(id)
                 .name(name)
                 .image(image)
@@ -47,10 +47,11 @@ public class Dog {
                 .build();
     }
 
-    public DogSpecificDto toDogSpecificDto() {
-        return DogSpecificDto.builder()
+    public DogSpecific toDogSpecificDto() {
+        return DogSpecific.builder()
                 .age(age)
                 .sex(sex)
+                .kind(kind)
                 .name(name)
                 .image(image)
                 .personality(Arrays.stream(personality.split(", ")).toList())

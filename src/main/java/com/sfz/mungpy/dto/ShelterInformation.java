@@ -7,12 +7,10 @@ import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class DogMatchDto {
-    private Long id;
+@NoArgsConstructor
+public class ShelterInformation {
     private String name;
-    private String image;
-    private String description;
-    private String matchReason;
+    private String address;
+    private String telno;
 }
