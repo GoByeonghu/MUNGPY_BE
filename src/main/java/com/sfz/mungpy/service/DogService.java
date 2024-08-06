@@ -8,15 +8,21 @@ import com.sfz.mungpy.repository.DogRepository;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.PriorityQueue;
+
 
 @Slf4j
 @Service
@@ -30,7 +36,7 @@ public class DogService {
     private static final int PERSONALITIES = 6;
 
     @AllArgsConstructor
-    private class MatchingPriority {
+    private static class MatchingPriority {
         private Dog dog;
         private int point;
     }
@@ -71,7 +77,7 @@ public class DogService {
         }
 
         // TODO: 파이썬 서버와 연결 필요
-        String dogImage = requestImageAnalyzation(image, matchingPriorities);
+        String dogImage = requestImageAnalyzation(image, selectList);
 
         Long dogId = 1L; // 임시
 
@@ -80,30 +86,44 @@ public class DogService {
                 .toMatchDto();
     }
 
-    private String requestImageAnalyzation(MultipartFile image, PriorityQueue<MatchingPriority> matchingPriorities) {
-        RestClient restClient = RestClient.builder()
-                .baseUrl("https://42ec-123-214-153-130.ngrok-free.app/")
-                .build();
+    private String requestImageAnalyzation(MultipartFile image, List<String> selectList) {
+        RestTemplate restTemplate = new RestTemplate();
 
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("image", encodeFileToBase64(image));
-        paramMap.put("list", matchingPriorities.stream().map(o -> o.point).toList());
 
-        return restClient.post()
-                .uri("/find_similar_dogs")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(paramMap)
-                .retrieve()
-                .toEntity(String.class)
-                .getBody();
+        MultiValueMap<String, Object> bodyMap = new LinkedMultiValueMap<>();
+        bodyMap.add("image", new MultipartFileResource(image));
+        bodyMap.add("list", selectList.toString());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(bodyMap, headers);
+
+        String url = "https://74c1-123-214-153-130.ngrok-free.app/find_similar_dogs";
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+
+        return response.getBody();
     }
 
-    private String encodeFileToBase64(MultipartFile file) {
-        try (InputStream inputStream = file.getInputStream()) {
-            byte[] bytes = inputStream.readAllBytes();
-            return Base64.getEncoder().encodeToString(bytes);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to encode file to Base64", e);
+    private static class MultipartFileResource extends ByteArrayResource {
+        private final MultipartFile file;
+
+        MultipartFileResource(MultipartFile file) {
+            super(toByteArray(file));
+            this.file = file;
+        }
+
+        @Override
+        public String getFilename() {
+            return file.getOriginalFilename();
+        }
+
+        private static byte[] toByteArray(MultipartFile file) {
+            try {
+                return file.getBytes();
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to read bytes from MultipartFile", e);
+            }
         }
     }
 
