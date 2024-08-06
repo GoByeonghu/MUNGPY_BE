@@ -31,9 +31,9 @@ public class Dog {
     @Column(name = "rescue_place")
     private String rescuePlace;
     @Column(name = "protect_place")
-    private String protectPlace;
+    private String protectPlace; //
     @Column(name = "protect_telno")
-    private String protectTelno;
+    private String protectTelno; //
     @Column(name = "expiration_date")
     private LocalDateTime expirationDate;
 
