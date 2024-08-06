@@ -4,6 +4,7 @@ import com.sfz.mungpy.dto.DogMatchDto;
 import com.sfz.mungpy.dto.DogSpecificDto;
 import com.sfz.mungpy.dto.UserInfomation;
 import com.sfz.mungpy.exception.DogNotFoundException;
+import com.sfz.mungpy.exception.ShelterNotFoundException;
 import com.sfz.mungpy.service.DogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +62,7 @@ public class DogController {
         DogSpecificDto dogSpecificDto;
         try {
             dogSpecificDto = dogService.showDog(dogId);
-        } catch (DogNotFoundException e) {
+        } catch (DogNotFoundException | ShelterNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
 

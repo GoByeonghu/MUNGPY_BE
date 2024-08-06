@@ -25,4 +25,7 @@ public class DogSpecificDto {
     private String protectTelno;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDateTime expirationDate;
+
+    private double latitude;
+    private double longitude;
 }

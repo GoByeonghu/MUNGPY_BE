@@ -2,12 +2,14 @@ package com.sfz.mungpy.service;
 
 import com.sfz.mungpy.dto.DogMatchDto;
 import com.sfz.mungpy.dto.DogSpecificDto;
+import com.sfz.mungpy.dto.KakaoMapResponse;
 import com.sfz.mungpy.entity.Dog;
 import com.sfz.mungpy.exception.DogNotFoundException;
+import com.sfz.mungpy.exception.ShelterNotFoundException;
 import com.sfz.mungpy.repository.DogRepository;
 import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -26,9 +28,14 @@ import java.util.PriorityQueue;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class DogService {
+    private final String secretKey;
     private final DogRepository dogRepository;
+
+    public DogService(@Value("${kakaoapi.secret-key}") String secretKey, DogRepository dogRepository) {
+        this.secretKey = secretKey;
+        this.dogRepository = dogRepository;
+    }
 
     // 전화번호, 주소, 이름, 대표자, 대표자 번호
 
@@ -129,8 +136,30 @@ public class DogService {
 
     @Transactional
     public DogSpecificDto showDog(Long dogId) {
-        return dogRepository.findById(dogId)
+        DogSpecificDto dogSpecificDto = dogRepository.findById(dogId)
                 .orElseThrow(DogNotFoundException::new)
                 .toDogSpecificDto();
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        String url = "https://dapi.kakao.com/v2/local/search/keyword?size=1";
+        url += "&query=" + dogSpecificDto.getProtectPlace();
+        log.info(url);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "KakaoAK " + secretKey);
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(headers);
+        KakaoMapResponse.Document kakaoMap = restTemplate.exchange(url, HttpMethod.GET, requestEntity, KakaoMapResponse.class)
+                .getBody().getDocuments().get(0);
+
+        if (kakaoMap == null) throw new ShelterNotFoundException();
+
+        log.info(kakaoMap.toString());
+
+        dogSpecificDto.setLongitude(Double.parseDouble(kakaoMap.getX()));
+        dogSpecificDto.setLatitude(Double.parseDouble(kakaoMap.getY()));
+
+        return dogSpecificDto;
     }
 }
