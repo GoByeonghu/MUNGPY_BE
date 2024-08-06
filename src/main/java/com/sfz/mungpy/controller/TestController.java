@@ -37,7 +37,7 @@ public class TestController {
 
         String json = """
                 {
-                    "model": "gpt-4o-mini",
+                    "model": "gpt-3.5-turbo",
                     "messages": [
                       {
                         "role": "user",
@@ -53,6 +53,7 @@ public class TestController {
                 .header("Content-Type", "application/json")
                 .body(json)
                 .retrieve()
-                .body(String.class);
+                .toEntity(String.class)
+                .getBody();
     }
 }

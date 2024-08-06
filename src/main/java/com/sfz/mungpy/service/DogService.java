@@ -8,13 +8,15 @@ import com.sfz.mungpy.repository.DogRepository;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.PriorityQueue;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -24,7 +26,7 @@ public class DogService {
 
     // 전화번호, 주소, 이름, 대표자, 대표자 번호
 
-    private static final int CANDIDATES = 5;
+    private static final int CANDIDATES = 10;
     private static final int PERSONALITIES = 6;
 
     @AllArgsConstructor
@@ -39,36 +41,38 @@ public class DogService {
 
         if (dogList.isEmpty()) throw new DogNotFoundException();
 
-        PriorityQueue<MatchingPriority> matchingPriorities = new PriorityQueue<>(Comparator.comparingInt(mp -> mp.point));
+        PriorityQueue<MatchingPriority> matchingPriorities = new PriorityQueue<>(Comparator.comparingInt(mp -> -mp.point));
         for (Dog dog : dogList) {
             List<String> dogPersonality = dog.toDogSpecificDto().getPersonality();
 
-            // TODO: 만약 포인트가 같아 후보 강아지의 수가 최대 갯수를 초과한다면? -> 적당히 자르기 or 전부 매칭해보기
             int point = 0;
             for (int i = 0; i < PERSONALITIES; i++) {
-                log.info("person: {}, dog: {}", personality.get(i), dogPersonality.get(i));
-
                 if (dogPersonality.get(i).equals(personality.get(i))) {
                     point++;
                 }
             }
 
-            // TODO: 만약 단 한 마리도 매칭되는 강아지가 없다면? -> 아무 강아지나 추천 or 추천하지 않음
-            if (matchingPriorities.size() <= CANDIDATES || matchingPriorities.peek().point < point) {
-                if (matchingPriorities.size() == CANDIDATES)
-                    matchingPriorities.poll();
+            matchingPriorities.offer(new MatchingPriority(dog, point));
+        }
 
-                matchingPriorities.offer(new MatchingPriority(dog, point));
+        List<String> selectList = new ArrayList<>();
+        while (!matchingPriorities.isEmpty()) {
+            MatchingPriority mp = matchingPriorities.poll();
+
+            if (selectList.size() < CANDIDATES) {
+                selectList.add(mp.dog.getImage());
+            }
+
+            if (selectList.size() == CANDIDATES) {
+                while (!matchingPriorities.isEmpty() && mp.point == matchingPriorities.peek().point) {
+                    selectList.add(matchingPriorities.poll().dog.getImage());
+                }
             }
         }
 
-        for (MatchingPriority mp : matchingPriorities) {
-            log.info("{}, point = {}",mp.dog.toString(), mp.point);
-        }
+        // TODO: 파이썬 서버와 연결 필요
+        String dogImage = requestImageAnalyzation(image, matchingPriorities);
 
-        // TODO: 사용자 이미지 분석 추가 - 스티븐이 작업 진행중
-
-        // TODO: 성향으로 후보군을 골라서 리스트로 보내면 모델 분석을 통해 적합한 하나를 돌려받아야 함
         Long dogId = 1L; // 임시
 
         return dogRepository.findById(dogId)
@@ -76,11 +80,37 @@ public class DogService {
                 .toMatchDto();
     }
 
+    private String requestImageAnalyzation(MultipartFile image, PriorityQueue<MatchingPriority> matchingPriorities) {
+        RestClient restClient = RestClient.builder()
+                .baseUrl("https://42ec-123-214-153-130.ngrok-free.app/")
+                .build();
+
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("image", encodeFileToBase64(image));
+        paramMap.put("list", matchingPriorities.stream().map(o -> o.point).toList());
+
+        return restClient.post()
+                .uri("/find_similar_dogs")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(paramMap)
+                .retrieve()
+                .toEntity(String.class)
+                .getBody();
+    }
+
+    private String encodeFileToBase64(MultipartFile file) {
+        try (InputStream inputStream = file.getInputStream()) {
+            byte[] bytes = inputStream.readAllBytes();
+            return Base64.getEncoder().encodeToString(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to encode file to Base64", e);
+        }
+    }
+
     @Transactional
     public DogSpecificDto showDog(Long dogId) {
         return dogRepository.findById(dogId)
                 .orElseThrow(DogNotFoundException::new)
                 .toDogSpecificDto();
-
     }
 }
