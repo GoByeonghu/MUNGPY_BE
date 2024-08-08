@@ -62,11 +62,15 @@ public class DogService {
     public DogMatch matchDog(List<String> personality, MultipartFile image) {
         List<Dog> dogList = dogRepository.findAll();
 
+        log.info("dogList: {}, size: {}", dogList.toString(), dogList.size());
+
         if (dogList.isEmpty()) throw new DogNotFoundException();
 
         PriorityQueue<MatchingPriority> matchingPriorities = new PriorityQueue<>(Comparator.comparingInt(mp -> -mp.point));
         for (Dog dog : dogList) {
             List<String> dogPersonality = dog.toDogSpecificDto().getPersonality();
+
+            log.info("dogPersonality: {}, size: {}", dog.toDogSpecificDto().getPersonality().toString(), dog.toDogSpecificDto().getPersonality().size());
 
             int point = 0;
             for (int i = 0; i < PERSONALITIES; i++) {
@@ -79,6 +83,9 @@ public class DogService {
         }
 
         List<String> selectList = new ArrayList<>();
+
+        log.info("selectList: {}, size: {}", selectList.toString(), selectList.size());
+
         while (!matchingPriorities.isEmpty()) {
             MatchingPriority mp = matchingPriorities.poll();
 
@@ -100,8 +107,12 @@ public class DogService {
         Dog matchDog = dogRepository.findByImage(imageName)
                 .orElseThrow(DogNotFoundException::new);
 
+        log.info(matchDog.toString());
+
         DogMatch matchDto = matchDog.toMatchDto();
         matchDto.setImage("/images/" + imageName);
+
+        log.info(matchDto.toString());
 
         Map<String, String> resultMap;
         try {
@@ -109,6 +120,8 @@ public class DogService {
 
             String description = resultMap.get("description");
             String matchReason = resultMap.get("matchReason");
+
+            log.info("dc: {}, mr: {}", description, matchReason);
 
             matchDto.setDescription(description);
             matchDto.setMatchReason(matchReason);
