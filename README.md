@@ -10,7 +10,7 @@
 
 <div align="center">
     <a href="https://github.com/KTB-sfz/MUNGPY_FE">Github</a> |
-    <a href="https://gobyeonghu.github.io/opensesame/2024/06/08/Mungpy.html">Blog</a>
+    <a href="https://gobyeonghu.github.io/mungpy/2024/06/08/Mungpy.html">Blog</a>
 </div>
 </div>
 
@@ -88,7 +88,7 @@
 
 ## 데모영상
 
-![mungpy](https://github.com/user-attachments/assets/9f3b0b87-a5e5-405f-b603-1fe4dd8f65ff)
+[![mungpy](https://github.com/user-attachments/assets/9f3b0b87-a5e5-405f-b603-1fe4dd8f65ff)](https://youtube.com/shorts/OyiD35PIoC0?si=xewny_CO3J8RsBf8)
 
 
 ## Contribution
